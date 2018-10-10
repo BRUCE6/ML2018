@@ -1,8 +1,10 @@
+import sys
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
+    sys.stdout = open('output.txt', 'w')
     X_train, y_train = [], []
     X_test, y_test = [], []
     with open('spambasetrain.csv', 'r') as f:
@@ -18,7 +20,10 @@ if __name__ == '__main__':
     
     # calculate prior
     p_spam = sum(y_train) / len(y_train)
+    print('1.')
     print('P(spam)', p_spam)
+    print('P(not_spame)', 1 - p_spam)
+    print()
 
     # calculate likelihood
     X_train_spam, X_train_notspam = [], []
@@ -33,28 +38,35 @@ if __name__ == '__main__':
         return u, sigma2
     u_spam, sigma2_spam = calculate_likelihood(X_train_spam)
     u_notspam, sigma2_notspam = calculate_likelihood(X_train_notspam)
-    print(u_spam, sigma2_spam)
-    print(u_notspam, sigma2_notspam)
+    print('2.')
+    print('p(xi|spam)')
+    for i, (u, s2) in enumerate(zip(u_spam, sigma2_spam)):
+        print(i + 1, u, s2)
+    print('p(xi|not_spam)') 
+    for i, (u, s2) in enumerate(zip(u_notspam, sigma2_notspam)):
+        print(i + 1, u, s2)
+    print()
 
     def log_gaussian(u, sigma2, x):
         return -sum(0.5 * np.log(2 * np.pi * sigma2) + (x - u) ** 2 / (2 * sigma2))
 
-    # test error    
+    # test error  
+    print('3.')
+    print('predicted class: 1 - spam, 0 - not spam')  
     error = 0
     for x, y in zip(X_test, y_test):
         post_spam = np.log(p_spam) + log_gaussian(u_spam, sigma2_spam, x)
         post_notspam = np.log(1 - p_spam) + log_gaussian(u_notspam, sigma2_notspam, x)
-        error += int(post_spam > post_notspam) != y
-    print(error / len(y_test))
-
-    # gaussian distribution proof
-    def gaussian_prob(x, u, sigma2):
-        return np.e ** (- (x - u) ** 2 / (2 * sigma2)) / np.sqrt(2 * np.pi * sigma2)
-    for i in range(len(X_train_spam[0])):
-        data = [x[i] for x in X_train_spam]
-        print(max(data), min(data))
-        hist, bins = np.histogram(data, bins=500)
-        bin_centers = (bins[1:]+bins[:-1])*0.5
-        plt.plot(bin_centers, hist / max(hist))
-        plt.scatter(data, gaussian_prob(data, u_spam[i], sigma2_spam[i]))
-        plt.show()
+        predict = int(post_spam > post_notspam) 
+        print(predict)
+        error += predict != y
+    print()
+    print(4.)
+    print('number of test examples classified correctly:', len(y_test) - error)
+    print()
+    print(5.)
+    print('number of test examples classified incorrectly:', error)
+    print()
+    print(5.)
+    print('percentage error:', error / len(y_test))
+    sys.stdout.close()
